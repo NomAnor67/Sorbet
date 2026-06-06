@@ -16,10 +16,20 @@ const tailwindConfig = path.join(root, "tailwind.config.js");
 const aliasPlugin = {
   name: "alias-plugin",
   setup(build) {
-    build.onResolve({ filter: /^@\// }, (args) => ({
-      path: path.join(root, "src", args.path.slice(2)),
-      namespace: "file",
-    }));
+    build.onResolve({ filter: /^@\// }, async (args) => {
+      const basePath = path.join(root, "src", args.path.slice(2));
+      const extensions = [".tsx", ".ts", ".jsx", ".js"];
+      
+      for (const ext of extensions) {
+        const fullPath = basePath + ext;
+        try {
+          await fs.promises.stat(fullPath);
+          return { path: fullPath };
+        } catch {}
+      }
+      
+      return { path: basePath, external: false };
+    });
   },
 };
 
