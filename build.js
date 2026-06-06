@@ -58,7 +58,8 @@ async function cleanDist() {
 
 async function buildCss() {
   const source = await fs.promises.readFile(sourceCss, "utf8");
-  const result = await postcss([tailwindcss(tailwindConfig), autoprefixer()]).process(source, {
+  const config = (await import(tailwindConfig)).default;
+  const result = await postcss([tailwindcss(config), autoprefixer()]).process(source, {
     from: sourceCss,
     to: path.join(assets, "index.css"),
   });
