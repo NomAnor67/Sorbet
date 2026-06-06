@@ -44,8 +44,11 @@ If you're using npm, run the following commands:
 
 ```bash
 npm install
-npm start
+npm run build
+npm run preview
 ```
+
+This repository now builds the front-end with a small `esbuild` script instead of Vite.
 
 ### pnpm
 
