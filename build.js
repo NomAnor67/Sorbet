@@ -57,13 +57,21 @@ async function cleanDist() {
 }
 
 async function buildCss() {
-  const source = await fs.promises.readFile(sourceCss, "utf8");
-  const config = (await import(tailwindConfig)).default;
-  const result = await postcss([tailwindcss(config), autoprefixer()]).process(source, {
-    from: sourceCss,
-    to: path.join(assets, "index.css"),
-  });
-  await fs.promises.writeFile(path.join(assets, "index.css"), result.css, "utf8");
+  try {
+    const source = await fs.promises.readFile(sourceCss, "utf8");
+    console.log(`[CSS] Read source: ${source.length} bytes`);
+    const config = (await import(tailwindConfig)).default;
+    console.log(`[CSS] Loaded config with ${config.content?.length || 0} content patterns`);
+    const result = await postcss([tailwindcss(config), autoprefixer()]).process(source, {
+      from: sourceCss,
+      to: path.join(assets, "index.css"),
+    });
+    console.log(`[CSS] PostCSS result: ${result.css.length} bytes`);
+    await fs.promises.writeFile(path.join(assets, "index.css"), result.css, "utf8");
+  } catch (err) {
+    console.error("[CSS] Build error:", err.message);
+    throw err;
+  }
 }
 
 async function copyPublic() {
@@ -104,12 +112,21 @@ async function buildJs() {
 }
 
 async function run() {
+  console.log("[BUILD] Starting...");
   await cleanDist();
-  await Promise.all([buildCss(), buildJs(), copyPublic(), copyIndexHtml()]);
+  console.log("[BUILD] Starting CSS build...");
+  const cssBuild = buildCss().catch(e => { console.error("[CSS] Error:", e); throw e; });
+  console.log("[BUILD] Starting JS build...");
+  const jsBuild = buildJs().catch(e => { console.error("[JS] Error:", e); throw e; });
+  const publicCopy = copyPublic();
+  const indexCopy = copyIndexHtml();
+  
+  await Promise.all([cssBuild, jsBuild, publicCopy, indexCopy]);
   console.log("Build complete: dist/");
 }
 
 run().catch((err) => {
-  console.error(err);
+  console.error("[BUILD] Fatal error:", err.message);
   process.exit(1);
 });
+
